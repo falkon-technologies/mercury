@@ -80,11 +80,10 @@ func setup() {
 			case m := <-engine.mChannel:
 				engine.processMutex.RLock() // Leitura simultânea segura
 				if m.pid != "" {
-					for _, p := range engine.processes {
-						if p.pid == m.pid {
-							slog.Default().Info("message received", "pid", p.pid, "key", m.Key)
-							p.channel <- m
-						}
+					p := engine.processes[m.pid]
+					if p != nil {
+						slog.Default().Info("message received", "pid", p.pid, "key", m.Key)
+						p.channel <- m
 					}
 				} else {
 					for _, p := range engine.processes {

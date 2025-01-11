@@ -53,6 +53,12 @@ func TestMercuryEngine(t *testing.T) {
 	dispatcher1.Dispatch(ctx, msg1)
 	dispatcher2.Dispatch(ctx, msg2)
 
+	PushMessage(&Message{
+		Key:  "event1",
+		Data: map[string]any{"payload": "resolver 1 data without PID"},
+		Ctx:  ctx,
+	})
+
 	time.Sleep(10 * time.Second)
 }
 
