@@ -170,7 +170,7 @@ func TestWaitingPushMessage_withError(t *testing.T) {
 	}
 
 	// Aguarda que a goroutine listener seja iniciada
-	//time.Sleep(100 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	msg := &Message{
 		Key:  "testKey",
