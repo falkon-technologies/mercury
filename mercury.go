@@ -136,7 +136,11 @@ func WaitingPushMessage(m *Message) error {
 	m.waitChan = waitChan
 
 	PushMessage(m)
-	return <-waitChan
+
+	err := <-waitChan
+	close(waitChan)
+
+	return err
 }
 
 func PushResolver(key string, resolver ResolverFunc, config ...*ResolverConfig) (*ProcessDispatcher, error) {
@@ -174,6 +178,15 @@ func PushResolver(key string, resolver ResolverFunc, config ...*ResolverConfig) 
 		channel: make(chan *Message, 10),
 	}
 
-	go engine.processes[pid].listen()
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func(p *Process) {
+		wg.Done()
+		p.listen()
+	}(engine.processes[pid])
+
+	wg.Wait()
+
 	return &ProcessDispatcher{pid: pid}, nil
 }
