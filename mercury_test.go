@@ -119,3 +119,73 @@ func TestConcurrentOperations(t *testing.T) {
 
 	time.Sleep(3 * time.Second)
 }
+
+func TestWaitingPushMessage_noError(t *testing.T) {
+	Initialize()
+
+	_testResolver := func(ctx context.Context, msg *Message) error {
+		time.Sleep(1 * time.Second)
+
+		if value, ok := msg.Data["foo"]; ok {
+			fmt.Println("Value received:", value)
+		}
+
+		return nil
+	}
+
+	_, err := PushResolver("testKey", _testResolver)
+	if err != nil {
+		t.Fatalf("Error registering resolver: %v", err)
+	}
+
+	msg := &Message{
+		Key:  "testKey",
+		Data: map[string]any{"foo": "bar"},
+	}
+
+	err = WaitingPushMessage(msg)
+	if err != nil {
+		t.Fatalf("Error waiting for message: %v", err)
+	}
+
+	time.Sleep(3 * time.Second)
+}
+
+func TestWaitingPushMessage_withError(t *testing.T) {
+	Initialize()
+
+	_testResolver := func(ctx context.Context, msg *Message) error {
+		time.Sleep(1 * time.Second)
+
+		if value, ok := msg.Data["foo"]; ok {
+			fmt.Println("Value received:", value)
+		}
+
+		return fmt.Errorf("error occurred")
+	}
+
+	_, err := PushResolver("testKey", _testResolver)
+	if err != nil {
+		t.Fatalf("Error registering resolver: %v", err)
+	}
+
+	// Aguarda que a goroutine listener seja iniciada
+	//time.Sleep(100 * time.Millisecond)
+
+	msg := &Message{
+		Key:  "testKey",
+		Data: map[string]any{"foo": "bar"},
+	}
+
+	err = WaitingPushMessage(msg)
+	if err == nil {
+		t.Fatalf("Error was expected")
+	}
+
+	if err.Error() != "error occurred" {
+		t.Fatalf("Unexpected error message: %v", err)
+	}
+
+	// Tempo adicional para garantir que todas as goroutines completem antes do teste terminar
+	time.Sleep(3 * time.Second)
+}

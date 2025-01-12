@@ -17,10 +17,11 @@ type (
 	}
 
 	Message struct {
-		Ctx  context.Context
-		pid  PID
-		Key  string
-		Data map[string]any
+		Ctx      context.Context
+		pid      PID
+		Key      string
+		Data     map[string]any
+		waitChan chan error
 	}
 
 	ResolverConfig struct {
@@ -114,7 +115,11 @@ func (p *Process) listen() {
 		select {
 		case m := <-p.channel:
 			if resolver, ok := p.resolver[m.Key]; ok {
-				if err := resolver(m.Ctx, m); err != nil {
+				err := resolver(m.Ctx, m)
+
+				if m.waitChan != nil {
+					m.waitChan <- err
+				} else if err != nil {
 					engine.config.ErrorFunc(m.Ctx, err)
 				}
 			}
@@ -124,6 +129,14 @@ func (p *Process) listen() {
 
 func PushMessage(m *Message) {
 	engine.mChannel <- m
+}
+
+func WaitingPushMessage(m *Message) error {
+	waitChan := make(chan error, 1)
+	m.waitChan = waitChan
+
+	PushMessage(m)
+	return <-waitChan
 }
 
 func PushResolver(key string, resolver ResolverFunc, config ...*ResolverConfig) (*ProcessDispatcher, error) {
