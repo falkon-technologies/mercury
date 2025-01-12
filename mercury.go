@@ -138,7 +138,6 @@ func WaitingPushMessage(m *Message) error {
 	PushMessage(m)
 
 	err := <-waitChan
-	close(waitChan)
 
 	return err
 }
