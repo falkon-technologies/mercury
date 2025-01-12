@@ -111,6 +111,17 @@ func (pd *ProcessDispatcher) PID() PID {
 }
 
 func (p *Process) listen() {
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = fmt.Errorf("panic: %v", r)
+			}
+			engine.config.ErrorFunc(context.Background(), err)
+			go p.listen()
+		}
+	}()
+
 	for {
 		select {
 		case m := <-p.channel:
